@@ -1,5 +1,7 @@
-const { connection } = require('../config/connection');
 const { Anime } = require('../models/Anime');
+const cloudinary = require('cloudinary').v2;
+
+const validExtensions = ['png', 'jpg', 'jpeg'];
 
 exports.getAnime = async (req, res) => {
     const  result = await Anime.findAll();
@@ -13,19 +15,69 @@ exports.getAnime = async (req, res) => {
 }
 
 exports.addAnime = async (req, res) => {
-    const {name, image, synopsis} = req.body;
+    const {name, synopsis} = req.body;    
+    const { file } = req.files;
 
-    const result = await Anime.create({
-        name,
-        image, 
-        synopsis
-    });
+    const extension = file.type.split('/')[1];
 
-    console.log(result.toJSON());
+    if (!validExtensions.includes(extension)) {
+        return res.status(400).send({
+            "message": "Not valid file extension"
+        });
+    }
 
-    res.status(201)
-    .send({
-        "status": 201,
-        "message": "Anime insert successfully"
-    });
+    try {
+        const upload = await fetch('http://localhost:4000/upload', {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                path: file.path,
+                folder: 'images'
+            })
+        });
+
+        const response = await upload.json();
+
+        if (response.status !== 201) {
+            return res.status(400).send({
+                "status": response.status,
+                "message": response.message,
+                "error": response.error
+            });
+        }
+
+        const image = response.data;
+
+        const result = await Anime.create({
+            name,
+            image,
+            synopsis
+        });
+
+        //console.log(result.toJSON());
+    
+        if (JSON.stringify(result) === '{}') {
+            return res.status(500)
+            .send({
+                "status": 500,
+                "message": "Error to insert in data base"
+            });
+        }
+
+        res.status(201)
+        .send({
+            "status": 201,
+            "message": "Anime add successfully"
+        });
+
+    } catch (error) {
+        res.status(400)
+        .send({
+            "status": 400,
+            "message": "Error to add anime",
+            "error": error
+        });
+    }
 }
