@@ -13,6 +13,7 @@ app.use(formData.parse());
 app.use(express.urlencoded({extended: true}));
 app.use('/anime', require('./routes/anime.route'));
 app.use(require('./routes/upload.route'));
+app.use(require('./routes/type.route'));
 
 app.listen(port, () => {
     console.log(`Server on port: ${port}`);

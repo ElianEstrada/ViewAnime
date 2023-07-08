@@ -1,5 +1,4 @@
 const { Anime } = require('../models/Anime');
-const cloudinary = require('cloudinary').v2;
 
 const validExtensions = ['png', 'jpg', 'jpeg'];
 
@@ -11,11 +10,10 @@ exports.getAnime = async (req, res) => {
         "message": "All animes",
         "data": result
     });
-    
 }
 
 exports.addAnime = async (req, res) => {
-    const {name, synopsis} = req.body;    
+    const {name, synopsis, opinion, rate, year, id_type} = req.body;    
     const { file } = req.files;
 
     const extension = file.type.split('/')[1];
@@ -49,15 +47,28 @@ exports.addAnime = async (req, res) => {
         }
 
         const image = response.data;
+        let result;
+        if (opinion === '') {
+            result = await Anime.create({
+                name,
+                image,
+                synopsis,
+                rate,
+                year,
+                id_type
+            });
+        } else {
+            result = await Anime.create({
+                name,
+                image,
+                synopsis,
+                opinion,
+                rate,
+                year,
+                id_type
+            });
+        }
 
-        const result = await Anime.create({
-            name,
-            image,
-            synopsis
-        });
-
-        //console.log(result.toJSON());
-    
         if (JSON.stringify(result) === '{}') {
             return res.status(500)
             .send({
